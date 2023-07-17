@@ -1,5 +1,6 @@
 package com.zerobase.domain;
 
+import com.zerobase.application.dto.VoicedataDto;
 import lombok.*;
 
 import javax.persistence.*;
@@ -22,26 +23,58 @@ public class Voicedata {
     @Lob
     private String content;
 
-    @Column
+    @Column(nullable = false)
     private String declaration;
 
-    @Column
-    private char disdata;
+    //판별결과
+    @Column(nullable = false)
+    private String disdata;
 
-    @Column
-    private char reroll;
+    //판별결과 확률
+    @Column(nullable = false)
+    private String persent;
 
-    @Column
-    private char mfcc;
+    //관리자가 지정한 결과값
+    @Column(nullable = true)
+    private String admindata;
+
+    //재학습된 결과 확률
+    @Column(nullable = true)
+    private String reroll;
+
+    //변조
+    @Column(nullable = false)
+    private String mfcc;
 
     @Column
     private LocalDate created_date;
+
+    //재학습된(수정된)날짜
+    @Column
+    private LocalDate modified_date;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    public void update(char disdata){
-        this.disdata = disdata;
+    public VoicedataDto toDto(){
+        return VoicedataDto.builder()
+                .id(id)
+                .audio_file(audio_file)
+                .content(content)
+                .declaration(declaration)
+                .disdata(disdata)
+                .persent(persent)
+                .admindata(admindata)
+                .reroll(reroll)
+                .mfcc(mfcc)
+                .created_date(created_date)
+                .modified_date(modified_date)
+                .user(user)
+                .build();
     }
+
+//    public void update(String disdata){
+//        this.disdata = disdata;
+//    }
 }

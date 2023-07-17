@@ -1,51 +1,54 @@
 package com.zerobase.application.service;
 
-import com.zerobase.application.dto.UserDto;
-import com.zerobase.domain.User;
-import com.zerobase.infrastructure.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import javax.transaction.Transactional;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.Errors;
-import org.springframework.validation.FieldError;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.zerobase.application.dto.request.UserSaveRequestDto;
+import com.zerobase.domain.RoleType;
+import com.zerobase.domain.User;
+import com.zerobase.infrastructure.repository.UserRepository;
 
-@RequiredArgsConstructor
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
-    private final BCryptPasswordEncoder encoder;
+    @Autowired
     private final UserRepository userRepository;
+    @Autowired
+    private final BCryptPasswordEncoder encoder;
 
-    //회원가입
+    //회원 가입 DB 저장
     @Transactional
-    public void userJoin(UserDto.Request dto) {
-
-        dto.setPassword(encoder.encode(dto.getPassword()));
-
-        userRepository.save(dto.toEntity());
-    }
-
-    //회원가입-유효성 중복성 체크
-    @Transactional(readOnly = true)
-    public Map<String, String> validateHandling(Errors errors) {
-        Map<String, String> validatorResult = new HashMap<>();
-
-        /* 유효성 검사, 중복 검사에 실패한 필드 목록을 받음 */
-        for (FieldError error : errors.getFieldErrors()) {
-            String validKeyName = String.format("valid_%s", error.getField());
-            validatorResult.put(validKeyName, error.getDefaultMessage());
+    public void join(UserSaveRequestDto userSaveRequestDto) {
+        if(userSaveRequestDto.getUsername().equals("damin")) {
+            userSaveRequestDto.setRole(RoleType.ADMIN);
         }
-        return validatorResult;
+        String encodePassword = encoder.encode(userSaveRequestDto.getPassword());
+        userSaveRequestDto.setPassword(encodePassword);
+        User user = userSaveRequestDto.toEntity();
+        userRepository.save(user);
     }
 
-    //회원권한수정
+    //회원 정보 DB 업데이트
     @Transactional
-    public void modify(UserDto.Request dto){
-        User user = userRepository.findById(dto)
-    }
+    public void update(User user) {
+        User findUser = userRepository.findById(user.getIdx()).orElseThrow(() -> new IllegalArgumentException("회원 없음"));
 
+        if (findUser != null) {
+            findUser.updatePhoneNumber(user.getPhoneNumber());
+            findUser.updatePassword(user.getPassword());
+            findUser.updateRole(user.getRole());
+
+            userRepository.save(findUser);
+
+            //서비스 단이라서 다시 저장해야할 것 같은데 github에는 안되어 있는데? 밑에 findUser 메소드도 쓰지 않았음.
+        }
+    }
 }
